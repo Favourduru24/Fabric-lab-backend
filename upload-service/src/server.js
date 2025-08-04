@@ -1,4 +1,4 @@
-// require('dotenv').config()
+require('dotenv').config()
 const express = require('express')
 const app = express()
 const cors = require('cors')
@@ -15,7 +15,7 @@ app.use(express.static('public'))
 app.use(logger)
 
 
-// app.use('', re )
+app.use('/api/media', require('./routes/upload-route'))
 app.use(helmet())
 app.use(errorMiddleware)
 
