@@ -1,9 +1,14 @@
 const express = require('express')
 const router = express.Router()
 const multer = require('multer')
-const { uploadMedia, getAllMediaByUser} = require('../controllers/upload-controller')
-const { generateImageFromAiAndUploadToDB} = require('../controllers/ai-image-controller')
+const {
+   uploadMedia,
+   getAllMediaByUser
+  } = require('../controllers/upload-controller')
 
+ const {
+  generateImageFromAiAndUploadToDB
+} = require('../controllers/ai-image-controller')
 
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -39,7 +44,7 @@ uploadMedia
 )
 
 router.get('/get-asset', getAllMediaByUser)
-router.post('/ai-image-generator', generateImageFromAiAndUploadToDB)
+// router.post('/ai-image-generator', generateImageFromAiAndUploadToDB)
 
  
 

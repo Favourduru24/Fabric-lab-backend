@@ -1,7 +1,7 @@
 const {uploadMediaToCloudinary} = require('../config/cloudinary')
 const Media = require('../models/media')
 
-const uploadMedia = async () => {
+const uploadMedia = async (req, res) => {
 
      try {
 

@@ -19,7 +19,7 @@ app.use('/api/media', require('./routes/upload-route'))
 app.use(helmet())
 app.use(errorMiddleware)
 
-dbConnc()
+// dbConnc()
 app.listen(PORT, () => {
 console.log(`Upload service server running on port ${PORT}`) 
 })
