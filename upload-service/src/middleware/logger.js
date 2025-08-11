@@ -18,7 +18,7 @@ const fsPromises = require('fs').promises
       try {
 
           if(!fs.existsSync(path.join(__dirname, '..', 'logs'))) {
-             await fsPromises.mkdir(path.join(__dirname, '..', 'log'))
+             await fsPromises.mkdir(path.join(__dirname, '..', 'logs'))
           } else {
             await fsPromises.appendFile(path.join(__dirname, '..', 'logs', logName), log)
           }

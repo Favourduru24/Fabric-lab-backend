@@ -15,7 +15,7 @@ app.use(express.static('public'))
 app.use(logger)
 
 
-// app.use('', re )
+app.use('/api/subscription', require('./routes/subscription-routes') )
 
 app.use(helmet())
 app.use(errorMiddleware)

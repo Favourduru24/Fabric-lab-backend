@@ -1,18 +1,21 @@
 require('dotenv').config()
 const express = require('express')
-const proxy = require('express-http-proxy')
 const app = express()
+const proxy = require('express-http-proxy')
 const helmet = require('helmet')
 const cors = require('cors')
 const corsOption = require('./config/corsOption')
 const PORT = process.env.PORT || 4000
-const authMidddleware = require('./middleware/auth-middleware')
+const errorMiddleware = require('./middleware/errorHandler')
+// const authMidddleware = require('./middleware/auth-middleware')
+const {logger} = require('./middleware/logger')
 
 
-app.use(helmet())
-app.use(cors(corsOption))
 app.use(express.json())
-app.use(express.urlencoded({extended: true}))
+app.use(express.urlencoded({extended: false}))
+app.use(cors(corsOption))
+app.use(helmet())
+app.use(logger)
 
 
 //proxy option ::
@@ -23,29 +26,51 @@ app.use(express.urlencoded({extended: true}))
 
      proxyErrorHandler: (err, res, next) => {
        res.status(500).json({
-        message: 'Internal proxy error.',
-        error: err.message
+        message: 'Internal proxy server error', error: err.message
        })
      }
  }
-
-  app.use('/v1/media', proxy(process.env.UPLOAD_SERVICE, ({
-     authMidddleware,
+ 
+//   Ko0uc6Eo3OXfJXhM
+  app.use('/v1/media', 
+    proxy(process.env.UPLOAD_SERVICE, ({
      ...proxyOptions,
      parseReqBody: false
   })))
 
-  app.use('/v1/design',
-     authMidddleware,
-     proxy(process.env.DESIGN_SERVICE, ({
-     ...proxyOptions,
-  })))
+  // app.use('/v1/design',
+  //  //   authMidddleware,
+  //    proxy(process.env.DESIGN_SERVICE, ({
+  //    ...proxyOptions,
+  //    proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
+  //       proxyReqOpts.headers["Content-Type"] = "application/json"
+  //       return proxyReqOpts
+  //   },
+  //   userResDecorator: (proxyRes, proxyResData, userReq) => {
+  //       console.log(`Response recieved from identity service: ${proxyRes.statusCode}`)
+  //       return proxyResData
+  //   }
+  // })))
+
+  app.use('/v1/design', proxy(process.env.DESIGN_SERVICE, {
+    ...proxyOptions,
+    proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
+        proxyReqOpts.headers["Content-Type"] = "application/json"
+        return proxyReqOpts
+    },
+    userResDecorator: (proxyRes, proxyResData, userReq) => {
+        console.log(`Response recieved from identity service: ${proxyRes.statusCode}`)
+        return proxyResData
+    }
+  }))
 
   app.use('/v1/subscription',
-     authMidddleware, 
+   //   authMidddleware, 
     proxy(process.env.SUBSCRIPTION_SERVICE, ({
      ...proxyOptions,
   })))
+
+  app.use(errorMiddleware)
 
 app.listen(PORT, () => {
 console.log(`Api-gateway service server running on port ${PORT}`)

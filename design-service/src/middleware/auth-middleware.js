@@ -5,7 +5,7 @@ const authenticatedRequest = (req, res, next) => {
 
     if(!userId) {
          return res.status(401).json({
-             error: 'UnAuthorized login to continue!'
+             message: 'UnAuthorized login to continue!'
          })
     }
 

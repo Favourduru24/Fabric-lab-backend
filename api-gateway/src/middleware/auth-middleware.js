@@ -34,7 +34,7 @@
         
       } catch (error) {
          console.error('Token verification failed', error)
-         res.statu(401).json({
+         res.status(401).json({
              error: 'Invalid Token!'
          })
       }

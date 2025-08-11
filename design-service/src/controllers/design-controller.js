@@ -3,16 +3,16 @@ const mongoose = require('mongoose')
 
  const getUserDesign = async (req, res) => {
    try {
-       const userId = req.user.userId
+      //  const userId = req.user.userId
 
-       if(!mongoose.Type.ObjectId.isValid(userId)) {
-       return res.status(400).json({
-         success: false,
-         message: 'Invalid ID format.'
-       })
-      }
+      //  if(!mongoose.Type.ObjectId.isValid(userId)) {
+      //  return res.status(400).json({
+      //    success: false,
+      //    message: 'Invalid ID format.'
+      //  })
+      // }
 
-       const design = await Design.find(userId)
+       const design = await Design.find({userId})
                                    .sort({upDatedAt: -1 })
 
        if(!design) {
@@ -28,10 +28,11 @@ const mongoose = require('mongoose')
        })
 
    } catch (error) {
-       res.status(500).json({
-         success: false,
-         message: 'Something went wrong fetching user design.'
-      }) 
+      //  res.status(500).json({
+      //    success: false,
+      //    message: 'Something went wrong fetching user design.'
+      // }) 
+      console.log('Something went wrong fetching design', error)
    }
  }
 
@@ -64,7 +65,7 @@ const mongoose = require('mongoose')
        })
 
    } catch (error) {
-        console.error('Error fetching design by id', error)
+        console.log('Error fetching design by id', error)
        res.status(500).json({
          success: false,
          message: 'Something went wrong fetching user design.'
@@ -73,8 +74,9 @@ const mongoose = require('mongoose')
  }
 
  const saveDesign = async (req, res, next) => {
-      const session = mongoose.startSession()
-      await session.startTransaction()
+      // const session = mongoose.startSession()
+      // await session.startTransaction()
+       console.log("User:", req.user);
 
    try {
 
@@ -128,8 +130,9 @@ const mongoose = require('mongoose')
 
    } catch (error) {
         next(error)
-        await session.abortTransaction()
-        session.endSession()
+         console.log('Something went wrong saving design.')
+        // await session.abortTransaction()
+        // session.endSession()
         res.status(500).json({
          success: false,
          message: 'Something went wrong saving design.'

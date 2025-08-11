@@ -11,7 +11,7 @@ const errorMiddleware = (err, req, res, next) => {
 
   // 2. Enhanced error logging (with timestamp and cleaned data)
   logEvent(
-    `[${new Date().toISOString()}] ${err.name}\t${req.method}\t${req.url}\t${req.headers.origin || 'No origin'}\t${err.message.replace(/\t|\n/g, ' ')}\n`,
+    `[${new Date().toISOString()}] ${err.name}\t${req.method}\t${req.url}\t${req.headers.origin || 'No origin'}\t${err.message}\n`,
     'errLog.log'
   );
 

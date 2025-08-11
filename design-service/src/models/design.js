@@ -1,14 +1,27 @@
 const mongoose = require('mongoose')
 
 const designSchema = new mongoose.Schema({
-     userId: String,
-     name: String,
-     canvasData: String,
-     width: Number,
-     height: Number,
-     category: String,
-}, {
-    timestamp: true
+     userId: {
+        type: String
+    },
+     name: {
+        type: String
+     },
+     canvasData: {
+        type: String
+     },
+     width: {
+        type: Number
+     },
+     height:{
+        type: Number
+     },
+     category: {
+        type: String
+     },
+     
+},{
+    timestamps: true
 })
 
  const Design = mongoose.model('Design', designSchema)
