@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const multer = require('multer')
+const authMiddleware = require('../middleware/auth-middleware')
 const {
    uploadMedia,
    getAllMediaByUser
@@ -15,7 +16,7 @@ const upload = multer({
     limits: 10 * 1024 * 1024
 }).single('file')
 
-router.post('/upload', (req, res, next) => {
+router.post('/upload', authMiddleware, (req, res, next) => {
     upload(req, res, function(err){
       if(err instanceof multer.MulterError)  {
         return res.status(400).json({
@@ -43,7 +44,7 @@ router.post('/upload', (req, res, next) => {
 uploadMedia
 )
 
-router.get('/get-asset', getAllMediaByUser)
+router.get('/get-asset', authMiddleware, getAllMediaByUser)
 // router.post('/ai-image-generator', generateImageFromAiAndUploadToDB)
 
  

@@ -30,7 +30,7 @@ const fsPromises = require('fs').promises
 
   const logger = (req, res, next) => {
     logEvent(`${req.method}\t${req.url}\t${req.headers.origin}\n`, 'errLog.log')
-    
+
     next()
   }
 

@@ -38,6 +38,7 @@ const uploadMedia = async (req, res) => {
 
 
      } catch (error) {
+        console.log('Something went wrong uploading asset', error)
         return res.status(500).json({
             success: false,
             message: 'Something went wrong creating asset',
@@ -56,6 +57,7 @@ const getAllMediaByUser = async (req, res) => {
         })
         
     } catch (error) {
+       console.log('Something went wrong fetching asset', error)
        return res.status(500).json({
             success: false,
             message: 'Something went wrong fetching asset',

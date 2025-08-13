@@ -11,7 +11,6 @@ const PORT = process.env.PORT || 4002
 
 app.use(cors(corsOption))
 app.use(express.json())
-app.use(express)
 app.use(express.static('public'))
 app.use(logger)
 

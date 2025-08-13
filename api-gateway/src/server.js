@@ -33,6 +33,7 @@ app.use(logger)
  
 //   Ko0uc6Eo3OXfJXhM
   app.use('/v1/media', 
+    authMiddleware,
     proxy(process.env.UPLOAD_SERVICE, ({
      ...proxyOptions,
      parseReqBody: false
