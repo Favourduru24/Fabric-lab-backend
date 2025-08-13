@@ -5,6 +5,6 @@ const authMiddleware = require('../middleware/auth-middleware')
 
 router.use(authMiddleware)
 
-router.get('', subscriptionController.getSubscription)
+router.get('/get-user-subcription', authMiddleware, subscriptionController.getSubscription)
 
 module.exports = router

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 
-const subscriptionSchema = mongoose.Schema({
+const subscriptionSchema = new mongoose.Schema({
     userId: String,
     isPremium: {
         type: Boolean,
@@ -8,10 +8,8 @@ const subscriptionSchema = mongoose.Schema({
     },
     paymentId: String,
     premiumSince: Date,
-    updatedAt:{
-       type: Date,
-       default: Date.now
-    }
+}, {
+    timestamps: true
 })
 
 subscriptionSchema.pre('save', function(next){
