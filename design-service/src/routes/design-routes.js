@@ -1,13 +1,13 @@
 const express = require('express')
 const router = express.Router()
 const designController = require('../controllers/design-controller')
-// const authMidddleware = require('../middleware/auth-middleware')
+const authMidddleware = require('../middleware/auth-middleware')
 
 
 
-router.get('/get-user-design', designController.getUserDesign)
-router.get('/get-user-design/:id', designController.getUserDesignByID)
-router.post('/save-design', designController.saveDesign)
+router.get('/get-user-design', authMidddleware, designController.getUserDesign)
+router.get('/get-user-design/:id', authMidddleware, designController.getUserDesignByID)
+router.post('/save-design', authMidddleware, designController.saveDesign)
 router.delete('delete-design/:id', designController.deleteDesign)
 
 module.exports = router

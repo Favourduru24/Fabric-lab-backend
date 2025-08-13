@@ -7,7 +7,7 @@ const cors = require('cors')
 const corsOption = require('./config/corsOption')
 const PORT = process.env.PORT || 4000
 const errorMiddleware = require('./middleware/errorHandler')
-// const authMidddleware = require('./middleware/auth-middleware')
+const {authMiddleware} = require('./middleware/auth-middleware')
 const {logger} = require('./middleware/logger')
 
 
@@ -52,16 +52,11 @@ app.use(logger)
   //   }
   // })))
 
-  app.use('/v1/design', proxy(process.env.DESIGN_SERVICE, {
+  app.use(
+    '/v1/design',
+     authMiddleware,
+      proxy(process.env.DESIGN_SERVICE, {
     ...proxyOptions,
-    proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
-        proxyReqOpts.headers["Content-Type"] = "application/json"
-        return proxyReqOpts
-    },
-    userResDecorator: (proxyRes, proxyResData, userReq) => {
-        console.log(`Response recieved from identity service: ${proxyRes.statusCode}`)
-        return proxyResData
-    }
   }))
 
   app.use('/v1/subscription',

@@ -11,7 +11,6 @@ const connToDB = async () => {
      console.log('Conected to mongodb!')
      
   } catch(error) {
-    console.log('Something went wrong connecting to MONGODB', error)
      throw new Error('Something went wrong connecting to Mongodb!') 
   }
 }

@@ -1,8 +1,9 @@
- const {OAuth2Client} = require('google-auth-library')
+ const {AuthClient, OAuth2Client} = require('google-auth-library')
 
  const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+//  const client = new AuthClient(process.env.GOOGLE_CLIENT_ID)
 
- async function authMidddleware(req, res, next){
+ async function authMiddleware(req, res, next){
      const authHeader = req.headers['authorization']
      const token = authHeader && authHeader.split(' ')[1]
 
@@ -28,18 +29,16 @@
         }
 
         req.headers['x-user-id'] = payload['sub']
-        req.headers['x-user-email'] = payload['email']
+        // req.headers['x-user-email'] = payload['email']
 
         next()
         
       } catch (error) {
-         console.error('Token verification failed', error)
-         res.status(401).json({
-             error: 'Invalid Token!'
+         console.log('Token verification failed', error)
+         res.status(500).json({
+             error: 'Something went wrong: Invalid Token!'
          })
       }
  }
 
- module.exports = {
-    authMidddleware
- }
+module.exports = { authMiddleware };

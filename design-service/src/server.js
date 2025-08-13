@@ -15,13 +15,14 @@ app.use(express.static('public'))
 app.use(cookieParser())
 app.use(express.urlencoded({extended: false}))
 app.use(cors(corsOption))
-app.use(logger)
 app.use(helmet())
 
 
 app.use('/api/design', require('./routes/design-routes')) 
 
 app.use(errorMiddleware)
+app.use(logger)
+
 
 dbConnc()
 app.listen(PORT, () => {
