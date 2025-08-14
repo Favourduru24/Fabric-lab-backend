@@ -61,7 +61,7 @@ app.use(logger)
   }))
 
   app.use('/v1/subscription',
-   //   authMidddleware, 
+     authMiddleware, 
     proxy(process.env.SUBSCRIPTION_SERVICE, ({
      ...proxyOptions,
   })))

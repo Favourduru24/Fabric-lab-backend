@@ -18,7 +18,7 @@ const fsPromises = require('fs').promises
       try {
 
           if(!fs.existsSync(path.join(__dirname, '..', 'logs'))) {
-             await fsPromises.mkdir(path.join(__dirname, '..', 'log'))
+             await fsPromises.mkdir(path.join(__dirname, '..', 'logs'))
           } else {
             await fsPromises.appendFile(path.join(__dirname, '..', 'logs', logName), log)
           }
@@ -30,6 +30,8 @@ const fsPromises = require('fs').promises
 
   const logger = (req, res, next) => {
     logEvent(`${req.method}\t${req.url}\t${req.headers.origin}\n`, 'errLog.log')
+
+    next()
   }
 
   module.exports = {logEvent, logger}
