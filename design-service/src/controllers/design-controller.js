@@ -5,13 +5,6 @@ const mongoose = require('mongoose')
        const userId = req.user.userId
     
    try {
-      //  if(!mongoose.Type.ObjectId.isValid(userId)) {
-      //  return res.status(400).json({
-      //    success: false,
-      //    message: 'Invalid ID format.'
-      //  })
-      // }
-
        const design = await Design.find({userId})
                                    .sort({upDatedAt: -1 })
 
@@ -31,6 +24,33 @@ const mongoose = require('mongoose')
        res.status(500).json({
          success: false,
          message: 'Something went wrong fetching user design.'
+      }) 
+      console.log('Something went wrong fetching design', error)
+   }
+ }
+
+ const getAllDesign = async (req, res) => {
+    
+   try {
+       const design = await Design.find()
+                                   .sort({upDatedAt: -1 })
+
+       if(!design) {
+         return res.status(404).json({
+             success: false,
+             message: 'Error fetching user design'
+         })
+       }
+
+       res.status(200).json({
+         message: 'design fetched successfully!',
+         data: design
+       })
+
+   } catch (error) {
+       res.status(500).json({
+         success: false,
+         message: 'Something went wrong fetching design.'
       }) 
       console.log('Something went wrong fetching design', error)
    }
