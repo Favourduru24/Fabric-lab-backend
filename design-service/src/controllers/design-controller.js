@@ -1,6 +1,17 @@
 const Design = require('../models/design')
 const mongoose = require('mongoose')
 
+ async function InvalidateDesignCache (req, input) {
+     const cachedKey = `post${input}`
+     await req.redisClient.del(cachedKey
+
+     )
+    const keys = req.redisClient.keys('designs:*')
+    if(keys.length > 0) {
+      await req.redisClient.del(keys)
+    }
+ }
+
  const getUserDesign = async (req, res) => {
 
    try {
@@ -12,13 +23,14 @@ const mongoose = require('mongoose')
        if(!design) {
          return res.status(404).json({
              success: false,
-             message: 'Error fetching user design'
+             message: 'No design found.'
          })
        }
 
        res.status(200).json({
+         success: true,
          message: 'design fetched successfully!',
-         data: design
+         //data: design
        })
 
    } catch (error) {
@@ -38,6 +50,13 @@ const mongoose = require('mongoose')
 
         const numPage = Number(page)
         const numLimit = Number(limit)
+
+        const cacheKey = `designs:${numPage}:${numLimit}`
+        const cashedDesign = await req.redisClient.get(cacheKey)
+
+        if(cashedDesign) {
+           return res.json(JSON.parse(cashedDesign))
+        }
        // Date conditions
         let timeCondition = {}
         
@@ -92,11 +111,20 @@ const mongoose = require('mongoose')
 
        const designCount = await Design.countDocuments(condition)
 
-       res.status(200).json({
-         message: 'design fetched successfully!',
+       const result = {
          data: design,
-         totalPage: Math.ceil(designCount / numLimit)
+         totalPage: Math.ceil(designCount / numLimit) 
+       }
+
+
+       await req.redisClient.setex(cacheKey, 300, JSON.stringify(result))
+
+       res.status(201).json({
+         message: 'design fetched successfully!',
+         success: true,
+         result
        })
+
    } catch (error) {
        res.status(500).json({
          success: false,
@@ -113,8 +141,13 @@ const mongoose = require('mongoose')
     const userId = req.user.userId
     const id = req.params.id
      
-    console.log({id, userId})
+      const cacheKey = `designs:${id}`
+        const cashedDesign = await req.redisClient.get(cacheKey)
 
+        if(cashedDesign) {
+           return res.json(JSON.parse(cashedDesign))
+        }
+     
      if(!mongoose.Types.ObjectId.isValid(id)) {
        return res.status(400).json({
          success: false,
@@ -127,12 +160,15 @@ const mongoose = require('mongoose')
      if(!designId) {
          return res.status(404).json({
              success: false,
-             message: 'Error fetching user design'
+             message: 'Design not found'
          })
        }
 
+       await req.redisClient.setex(cashedDesign, 3600, JSON.stringify(designId))
+
        res.status(200).json({
          message: 'design fetched successfully!',
+          success: true,
          data: designId
        })
 
@@ -146,10 +182,6 @@ const mongoose = require('mongoose')
  }
 
  const saveDesign = async (req, res, next) => {
-      // const session = mongoose.startSession()
-      // await session.startTransaction()
-       console.log("User:", req.user);
-
    try {
 
     const userId = req.user.userId
@@ -191,6 +223,7 @@ const mongoose = require('mongoose')
       })
 
       const saveNewDesign = await newDesign.save()
+      await InvalidateDesignCache(req, saveNewDesign._id.toString())
       
       return res.status(200).json({
          success: true,
@@ -202,9 +235,6 @@ const mongoose = require('mongoose')
 
    } catch (error) {
         next(error)
-         console.log('Something went wrong saving design.')
-        // await session.abortTransaction()
-        // session.endSession()
    }
  }
 
@@ -226,11 +256,13 @@ const mongoose = require('mongoose')
      if(!designId) {
          return res.status(404).json({
              success: false,
-             message: 'Error fetching user design'
+             message: 'No design found.'
          })
        }
 
        await Design.deleteOne({id: designId})
+       
+       await InvalidateDesignCache(req, req.params.id)
 
        res.status(200).json({
          success: true,
@@ -239,7 +271,7 @@ const mongoose = require('mongoose')
      
    } catch (error) {
         console.error('Error deleting design', error)
-       res.status(500).json({
+        res.status(500).json({
          success: false,
          message: 'Something went wrong deleting design.'
       }) 
