@@ -1,7 +1,6 @@
  const {AuthClient, OAuth2Client} = require('google-auth-library')
 
  const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
-//  const client = new AuthClient(process.env.GOOGLE_CLIENT_ID)
 
  async function authMiddleware(req, res, next){
      const authHeader = req.headers['authorization']
@@ -29,7 +28,7 @@
         }
 
         req.headers['x-user-id'] = payload['sub']
-        // req.headers['x-user-email'] = payload['email']
+        req.headers['x-user-email'] = payload['email']
 
         next()
         

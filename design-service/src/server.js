@@ -10,7 +10,7 @@ const {logger, logEvent} = require('./middleware/logger')
 const errorMiddleware = require('./middleware/errorHandler')
 const PORT = process.env.PORT || 4001
 const Redis = require('ioredis')
-const {RedisRateLimiter} = require('express-rate-limiter')
+const {RateLimiterRedis} = require('rate-limiter-flexible')
 
 //built in middleware
 app.use(express.json())
@@ -24,17 +24,20 @@ app.use(helmet())
 
 // DDos protection and rate limiting.
 const redisClient = new Redis(process.env.REDIS_URL)
+ redisClient.on('error', (err) => {
+    console.error('Redis client error:', err);
+})
 
-const rateLimiter = new RedisRateLimiter({
+const rateLimiter = new RateLimiterRedis({
    storeClient: redisClient,
    keyPrefix: 'middleware',
-   point: 10,
+   points: 10,
    duration: 60
 })
 
   app.use((req, res, next) => {
   rateLimiter.consume(req.ip)
-   then(() => next())
+    .then(() => next())
     .catch((error) => {
     logEvent(`Too Many Requests from this Ip ${req.ip}`, 'rateLimiter.log')
     res.status(429).json({

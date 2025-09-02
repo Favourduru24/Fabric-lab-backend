@@ -15,10 +15,63 @@ const mongoose = require('mongoose')
  const getUserDesign = async (req, res) => {
 
    try {
+      const {query, category = '', date, page = 1, limit = 10} = req.query
+
+        const numPage = Number(page)
+        const numLimit = Number(limit)
         const userId = req.user.userId
 
-       const design = await Design.find({userId})
+        const cacheKey = `designs:${numPage}:${numLimit}`
+        const cashedDesign = await req.redisClient.get(cacheKey)
+
+        if(cashedDesign) {
+           return res.json(JSON.parse(cashedDesign))
+        }
+       // Date conditions
+        let timeCondition = {}
+        
+        if(date) {
+           const now = Date.now()
+
+          if(date === 'recently_modified') {
+            timeCondition.updatedAt = {$gte: new Date(now - 60 * 60 * 1000)}
+           } else if(date === 'created_recently') {
+              timeCondition.createdAt = {$gte: new Date(now - 60 * 60 * 1000)}
+           }else if(date === 'yesterday'){
+             const yesterday = new Date(now)
+             yesterday.setDate(yesterday.getDate() - 1)
+             timeCondition.createdAt = {$gte: yesterday}
+           } else if(date === '1week') {
+             const lastWeek = new Date(now)
+             lastWeek.setDate(lastWeek.getDate() - 7)
+             timeCondition.createdAt = {$gte: lastWeek}
+           } else if(date === 'last_month'){
+             const lastMonth = new Date(now)
+             lastMonth.setDate(lastMonth.getMonth() - 1)
+             timeCondition.createdAt = {$gte: lastMonth}
+           }
+        }
+        //Search condition
+        const searchCondition = query ?
+         { $or: [
+          {name: {$regex: query, $options: 'i'}},
+          {category: {$regex: query, options: 'i'}}
+         ]} : {}
+
+         const condition = {$and: [
+           searchCondition,
+           timeCondition,
+           category,
+         ].filter(cond => Object.keys(cond).length > 0)}
+
+          //pagination
+         const skipAmout = numPage - numLimit
+
+
+       const design = await Design.find({userId, condition})
                                    .sort({upDatedAt: -1 })
+                                   .skip(skipAmout)
+                                   .limit(numLimit)
 
        if(!design) {
          return res.status(404).json({
@@ -27,10 +80,20 @@ const mongoose = require('mongoose')
          })
        }
 
+       const designCount = await Design.countDocuments(condition)
+
+       const result = {
+         data: design,
+         totalPage: Math.ceil(designCount / numLimit) 
+       }
+
+
+       await req.redisClient.setex(cacheKey, 300, JSON.stringify(result))
+
        res.status(200).json({
          success: true,
          message: 'design fetched successfully!',
-         //data: design
+         data: result
        })
 
    } catch (error) {

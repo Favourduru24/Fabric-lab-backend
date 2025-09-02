@@ -64,46 +64,46 @@ app.use(routeLimiter)
     parseReqBody: false
    }))
 
-  app.use('/v1/design',
-     authMiddleware,
-     proxy(process.env.DESIGN_SERVICE, ({
-     ...proxyOptions,
-     proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
-        proxyReqOpts.headers["Content-Type"] = "application/json"
-        return proxyReqOpts
-    },
-    userResDecorator: (proxyRes, proxyResData, userReq) => {
-        console.log(`Response recieved from design service: ${proxyRes.statusCode}`)
-        return proxyResData
-    }
-  })))
+//   app.use('/v1/design',
+//      authMiddleware,
+//      proxy(process.env.DESIGN_SERVICE, ({
+//      ...proxyOptions,
+//      proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
+//         proxyReqOpts.headers["Content-Type"] = "application/json"
+//         return proxyReqOpts
+//     },
+//     userResDecorator: (proxyRes, proxyResData, userReq) => {
+//         console.log(`Response recieved from design service: ${proxyRes.statusCode}`)
+//         return proxyResData
+//     }
+//   })))
+
+//   app.use('/v1/subscription',
+//      authMiddleware,
+//      proxy(process.env.SUBSCRIPTION_SERVICE, ({
+//      ...proxyOptions,
+//      proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
+//         proxyReqOpts.headers["Content-Type"] = "application/json"
+//         return proxyReqOpts
+//     },
+//     userResDecorator: (proxyRes, proxyResData, userReq) => {
+//         console.log(`Response recieved from subcription service: ${proxyRes.statusCode}`)
+//         return proxyResData
+//     }
+//   })))
 
   app.use('/v1/subscription',
-     authMiddleware,
-     proxy(process.env.SUBSCRIPTION_SERVICE, ({
+     authMiddleware, 
+    proxy(process.env.SUBSCRIPTION_SERVICE, ({
      ...proxyOptions,
-     proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
-        proxyReqOpts.headers["Content-Type"] = "application/json"
-        return proxyReqOpts
-    },
-    userResDecorator: (proxyRes, proxyResData, userReq) => {
-        console.log(`Response recieved from subcription service: ${proxyRes.statusCode}`)
-        return proxyResData
-    }
   })))
 
-  // app.use('/v1/subscription',
-  //    authMiddleware, 
-  //   proxy(process.env.SUBSCRIPTION_SERVICE, ({
-  //    ...proxyOptions,
-  // })))
-
-  // app.use(
-  //   '/v1/design',
-  //    authMiddleware,
-  //     proxy(process.env.DESIGN_SERVICE, {
-  //   ...proxyOptions,
-  // }))
+  app.use(
+    '/v1/design',
+     authMiddleware,
+      proxy(process.env.DESIGN_SERVICE, {
+    ...proxyOptions,
+  }))
 
   //  app.use('/v1/media', 
   //   authMiddleware,
