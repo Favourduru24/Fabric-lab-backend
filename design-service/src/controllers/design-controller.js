@@ -12,98 +12,114 @@ const mongoose = require('mongoose')
     }
  }
 
- const getUserDesign = async (req, res) => {
-
+const getUserDesign = async (req, res) => {
    try {
-      const {query, category = '', date, page = 1, limit = 10} = req.query
+      const { query, category = '', date, page = 1, limit = 10 } = req.query
 
-        const numPage = Number(page)
-        const numLimit = Number(limit)
-        const userId = req.user.userId
+      const numPage = Math.max(1, Number(page))
+      const numLimit = Math.max(1, Number(limit))
+      const userId = req.user.userId
 
-        const cacheKey = `designs:${numPage}:${numLimit}`
-        const cashedDesign = await req.redisClient.get(cacheKey)
+      // Create a more specific cache key including user and query parameters
+      const cacheKey = `designs:${userId}:${query || ''}:${category}:${date}:${numPage}:${numLimit}`
+      const cashedDesign = await req.redisClient.get(cacheKey)
 
-        if(cashedDesign) {
-           return res.json(JSON.parse(cashedDesign))
-        }
-       // Date conditions
-        let timeCondition = {}
-        
-        if(date) {
-           const now = Date.now()
+      if(cashedDesign) {
+         return res.json(JSON.parse(cashedDesign))
+      }
 
-          if(date === 'recently_modified') {
-            timeCondition.updatedAt = {$gte: new Date(now - 60 * 60 * 1000)}
-           } else if(date === 'created_recently') {
-              timeCondition.createdAt = {$gte: new Date(now - 60 * 60 * 1000)}
-           }else if(date === 'yesterday'){
-             const yesterday = new Date(now)
-             yesterday.setDate(yesterday.getDate() - 1)
-             timeCondition.createdAt = {$gte: yesterday}
-           } else if(date === '1week') {
-             const lastWeek = new Date(now)
-             lastWeek.setDate(lastWeek.getDate() - 7)
-             timeCondition.createdAt = {$gte: lastWeek}
-           } else if(date === 'last_month'){
-             const lastMonth = new Date(now)
-             lastMonth.setDate(lastMonth.getMonth() - 1)
-             timeCondition.createdAt = {$gte: lastMonth}
-           }
-        }
-        //Search condition
-        const searchCondition = query ?
-         { $or: [
-          {name: {$regex: query, $options: 'i'}},
-          {category: {$regex: query, options: 'i'}}
-         ]} : {}
+      // Date conditions
+      let timeCondition = {}
+      
+      if(date) {
+         const now = new Date()
 
-         const condition = {$and: [
-           searchCondition,
-           timeCondition,
-           category,
-         ].filter(cond => Object.keys(cond).length > 0)}
+         if(date === 'recently_modified') {
+            timeCondition.updatedAt = { $gte: new Date(now - 60 * 60 * 1000) }
+         } else if(date === 'created_recently') {
+            timeCondition.createdAt = { $gte: new Date(now - 60 * 60 * 1000) }
+         } else if(date === 'yesterday') {
+            const yesterday = new Date(now)
+            yesterday.setDate(yesterday.getDate() - 1)
+            timeCondition.createdAt = { $gte: yesterday }
+         } else if(date === '1week') {
+            const lastWeek = new Date(now)
+            lastWeek.setDate(lastWeek.getDate() - 7)
+            timeCondition.createdAt = { $gte: lastWeek }
+         } else if(date === 'last_month') {
+            const lastMonth = new Date(now)
+            lastMonth.setMonth(lastMonth.getMonth() - 1)
+            timeCondition.createdAt = { $gte: lastMonth }
+         }
+      }
 
-          //pagination
-         const skipAmout = numPage - numLimit
+      // Search condition
+      const searchCondition = query ? {
+         $or: [
+            { name: { $regex: query, $options: 'i' } },
+            { category: { $regex: query, $options: 'i' } }
+         ]
+      } : {}
 
+      // Category condition
+      const categoryCondition = category ? { category: { $regex: category, $options: 'i' } } : {}
 
-       const design = await Design.find({userId, condition})
-                                   .sort({upDatedAt: -1 })
-                                   .skip(skipAmout)
-                                   .limit(numLimit)
+      // Build final conditions
+      const conditions = {
+         userId,
+         ...searchCondition,
+         ...timeCondition,
+         ...categoryCondition
+      }
 
-       if(!design) {
+      // Remove empty objects
+      Object.keys(conditions).forEach(key => {
+         if (conditions[key] && typeof conditions[key] === 'object' && Object.keys(conditions[key]).length === 0) {
+            delete conditions[key]
+         }
+      })
+
+      // Correct skip calculation
+      const skipAmount = (numPage - 1) * numLimit
+
+      const designs = await Design.find(conditions)
+         .sort({ updatedAt: -1 })
+         .skip(skipAmount)
+         .limit(numLimit)
+
+      if(!designs || designs.length === 0) {
          return res.status(404).json({
-             success: false,
-             message: 'No design found.'
+            success: false,
+            message: 'No designs found.'
          })
-       }
+      }
 
-       const designCount = await Design.countDocuments(condition)
+      const designCount = await Design.countDocuments(conditions)
 
-       const result = {
-         data: design,
-         totalPage: Math.ceil(designCount / numLimit) 
-       }
+      const result = {
+         data: designs,
+         totalPages: Math.ceil(designCount / numLimit),
+         currentPage: numPage,
+         totalItems: designCount,
+         itemsPerPage: numLimit
+      }
 
+      await req.redisClient.setex(cacheKey, 300, JSON.stringify(result))
 
-       await req.redisClient.setex(cacheKey, 300, JSON.stringify(result))
-
-       res.status(200).json({
+      res.status(200).json({
          success: true,
-         message: 'design fetched successfully!',
+         message: 'Designs fetched successfully!',
          data: result
-       })
+      })
 
    } catch (error) {
-       res.status(500).json({
-         success: false,
-         message: 'Something went wrong fetching user design.'
-      }) 
       console.log('Something went wrong fetching design', error)
+      res.status(500).json({
+         success: false,
+         message: 'Something went wrong fetching user designs.'
+      }) 
    }
- }
+}
 
  const getAllDesign = async (req, res) => {
     
