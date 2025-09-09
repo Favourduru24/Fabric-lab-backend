@@ -14,44 +14,51 @@ const mongoose = require('mongoose')
 
 const getUserDesign = async (req, res) => {
    try {
-      const { query, category = '', date, page = 1, limit = 10 } = req.query
+      const { query = '', category = '', date, page = 1, limit = 10 } = req.query;
+      const numPage = Math.max(1, Number(page));
+      const numLimit = Math.max(1, Number(limit));
+      const userId = req.user.userId;
 
-      const numPage = Math.max(1, Number(page))
-      const numLimit = Math.max(1, Number(limit))
-      const userId = req.user.userId
-
-      // Create a more specific cache key including user and query parameters
-      const cacheKey = `designs:${userId}:${query || ''}:${category}:${date}:${numPage}:${numLimit}`
-      const cashedDesign = await req.redisClient.get(cacheKey)
-
+      // Create cache key with encoded parameters
+      const cacheKey = `userDesigns:${userId}:${encodeURIComponent(category)}:${date}:${numPage}:${numLimit}`;
+      const cashedDesign = await req.redisClient.get(cacheKey);
+// ${encodeURIComponent(query)}
       if(cashedDesign) {
-         return res.json(JSON.parse(cashedDesign))
+         return res.json(JSON.parse(cashedDesign));
       }
+      console.log(userId)
+      // Base condition - user filter
+      const baseCondition = { user: userId };
 
       // Date conditions
-      let timeCondition = {}
+      // let timeCondition = {};
       
-      if(date) {
-         const now = new Date()
+      // if(date) {
+      //    const now = new Date();
 
-         if(date === 'recently_modified') {
-            timeCondition.updatedAt = { $gte: new Date(now - 60 * 60 * 1000) }
-         } else if(date === 'created_recently') {
-            timeCondition.createdAt = { $gte: new Date(now - 60 * 60 * 1000) }
-         } else if(date === 'yesterday') {
-            const yesterday = new Date(now)
-            yesterday.setDate(yesterday.getDate() - 1)
-            timeCondition.createdAt = { $gte: yesterday }
-         } else if(date === '1week') {
-            const lastWeek = new Date(now)
-            lastWeek.setDate(lastWeek.getDate() - 7)
-            timeCondition.createdAt = { $gte: lastWeek }
-         } else if(date === 'last_month') {
-            const lastMonth = new Date(now)
-            lastMonth.setMonth(lastMonth.getMonth() - 1)
-            timeCondition.createdAt = { $gte: lastMonth }
-         }
-      }
+      //    if(date === 'today') {
+      //       const startOfDay = new Date(now);
+      //       startOfDay.setHours(0, 0, 0, 0);
+      //       timeCondition.createdAt = { $gte: startOfDay };
+      //    } else if(date === 'created_recently') {
+      //       timeCondition.createdAt = { $gte: new Date(now - 24 * 60 * 60 * 1000) };
+      //    } else if(date === 'yesterday') {
+      //       const yesterday = new Date(now);
+      //       yesterday.setDate(yesterday.getDate() - 1);
+      //       yesterday.setHours(0, 0, 0, 0);
+      //       const endOfYesterday = new Date(yesterday);
+      //       endOfYesterday.setHours(23, 59, 59, 999);
+      //       timeCondition.createdAt = { $gte: yesterday, $lte: endOfYesterday };
+      //    } else if(date === 'last week') {
+      //       const lastWeek = new Date(now);
+      //       lastWeek.setDate(lastWeek.getDate() - 7);
+      //       timeCondition.createdAt = { $gte: lastWeek };
+      //    } else if(date === 'last month') {
+      //       const lastMonth = new Date(now);
+      //       lastMonth.setMonth(lastMonth.getMonth() - 1);
+      //       timeCondition.createdAt = { $gte: lastMonth };
+      //    }
+      // }
 
       // Search condition
       const searchCondition = query ? {
@@ -59,42 +66,31 @@ const getUserDesign = async (req, res) => {
             { name: { $regex: query, $options: 'i' } },
             { category: { $regex: query, $options: 'i' } }
          ]
-      } : {}
+      } : {};
 
-      // Category condition
-      const categoryCondition = category ? { category: { $regex: category, $options: 'i' } } : {}
+      // Category condition (exact match or regex-based)
+      const categoryCondition = category ? { 
+        category: { $regex: category, $options: 'i' } 
+      } : {};
 
-      // Build final conditions
-      const conditions = {
-         userId,
-         ...searchCondition,
-         ...timeCondition,
-         ...categoryCondition
-      }
-
-      // Remove empty objects
-      Object.keys(conditions).forEach(key => {
-         if (conditions[key] && typeof conditions[key] === 'object' && Object.keys(conditions[key]).length === 0) {
-            delete conditions[key]
-         }
-      })
-
-      // Correct skip calculation
-      const skipAmount = (numPage - 1) * numLimit
+      // Build final conditions efficiently
+     const conditions = {
+            $and: [
+                baseCondition,
+                searchCondition, 
+                categoryCondition
+            ].filter(cond => Object.keys(cond).length > 0)
+        };
+      
+       
+      const skipAmount = (numPage - 1) * numLimit;
 
       const designs = await Design.find(conditions)
          .sort({ updatedAt: -1 })
          .skip(skipAmount)
-         .limit(numLimit)
+         .limit(numLimit);
 
-      if(!designs || designs.length === 0) {
-         return res.status(404).json({
-            success: false,
-            message: 'No designs found.'
-         })
-      }
-
-      const designCount = await Design.countDocuments(conditions)
+      const designCount = await Design.countDocuments(conditions);
 
       const result = {
          data: designs,
@@ -102,107 +98,72 @@ const getUserDesign = async (req, res) => {
          currentPage: numPage,
          totalItems: designCount,
          itemsPerPage: numLimit
-      }
+      };
 
-      await req.redisClient.setex(cacheKey, 300, JSON.stringify(result))
+      await req.redisClient.setex(cacheKey, 300, JSON.stringify(result));
 
       res.status(200).json({
          success: true,
-         message: 'Designs fetched successfully!',
+         message: designs.length > 0 ? 'Designs fetched successfully!' : 'No designs found',
          data: result
-      })
+      });
 
    } catch (error) {
-      console.log('Something went wrong fetching design', error)
+      console.log('Something went wrong fetching design', error);
       res.status(500).json({
          success: false,
          message: 'Something went wrong fetching user designs.'
-      }) 
+      }); 
    }
 }
 
- const getAllDesign = async (req, res) => {
-    
+const getAllDesign = async (req, res) => {
+
    try {
+    const {query, page = 1, limit = 10} = req.query
 
-    const {search, category = '', date, page = 1, limit = 10} = req.query
+    const numPage = Math.max(1, Number(page))
+    const numLimit = Math.max(1, Number(limit))
 
-        const numPage = Number(page)
-        const numLimit = Number(limit)
+    const cacheKey = `designs:${numPage}:${numLimit}`
+    const cashedDesign = await req.redisClient.get(cacheKey)
+// ${query}
+    if(cashedDesign) {
+       return res.json(JSON.parse(cashedDesign))
+    }
+     
+    // Search condition
+    const searchCondition = query ? {
+      $or: [
+        {name: {$regex: query, $options: 'i'}},
+        { category: { $regex: query, $options: 'i' } }
+      ]
+    } : {}
 
-        const cacheKey = `designs:${numPage}:${numLimit}`
-        const cashedDesign = await req.redisClient.get(cacheKey)
+    const skipAmount = (numPage - 1) * numLimit
 
-        if(cashedDesign) {
-           return res.json(JSON.parse(cashedDesign))
-        }
-       // Date conditions
-        let timeCondition = {}
-        
-        if(date) {
-           const now = Date.now()
+    const designs = await Design.find(searchCondition)
+                               .skip(skipAmount)
+                               .sort({updatedAt: -1 })
+                               .limit(numLimit)
 
-          if(date === 'recently_modified') {
-            timeCondition.updatedAt = {$gte: new Date(now - 60 * 60 * 1000)}
-           } else if(date === 'created_recently') {
-              timeCondition.createdAt = {$gte: new Date(now - 60 * 60 * 1000)}
-           }else if(date === 'yesterday'){
-             const yesterday = new Date(now)
-             yesterday.setDate(yesterday.getDate() - 1)
-             timeCondition.createdAt = {$gte: yesterday}
-           } else if(date === '1week') {
-             const lastWeek = new Date(now)
-             lastWeek.setDate(lastWeek.getDate() - 7)
-             timeCondition.createdAt = {$gte: lastWeek}
-           } else if(date === 'last_month'){
-             const lastMonth = new Date(now)
-             lastMonth.setDate(lastMonth.getMonth() - 1)
-             timeCondition.createdAt = {$gte: lastMonth}
-           }
-        }
-        //Search condition
-        const searchCondition = search ?
-         { $or: [
-          {name: {$regex: search, $options: 'i'}},
-          {category: {$regex: search, options: 'i'}}
-         ]} : {}
+    const designCount = await Design.countDocuments(searchCondition)
 
-         const condition = {$and: [
-           searchCondition,
-           timeCondition,
-           category,
-         ].filter(cond => Object.keys(cond).length > 0)}
+    const result = {
+      data: designs,
+      totalPages: Math.ceil(designCount / numLimit),
+      currentPage: numPage,
+      totalItems: designCount,
+      itemsPerPage: numLimit
+    }
 
-          //pagination
-         const skipAmout = numPage - numLimit
+    await req.redisClient.setex(cacheKey, 300, JSON.stringify(result))
 
-       const design = await Design.find(condition)
-                                   .skip(skipAmout)
-                                   .sort({upDatedAt: -1 })
-                                   .limit(numLimit)
-
-       if(!design) {
-         return res.status(404).json({
-             success: false,
-             message: 'Error fetching user design'
-         })
-       }
-
-       const designCount = await Design.countDocuments(condition)
-
-       const result = {
-         data: design,
-         totalPage: Math.ceil(designCount / numLimit) 
-       }
-
-
-       await req.redisClient.setex(cacheKey, 300, JSON.stringify(result))
-
-       res.status(201).json({
-         message: 'design fetched successfully!',
-         success: true,
-         result
-       })
+    res.status(200).json({  // Changed from 201 to 200
+      success: true,
+      message: 'Designs fetched successfully!',
+      data: result  // Consistent structure with getUserDesign
+    })
 
    } catch (error) {
        res.status(500).json({
@@ -211,7 +172,7 @@ const getUserDesign = async (req, res) => {
       }) 
       console.log('Something went wrong fetching design', error)
    }
- }
+}
 
  const getUserDesignByID = async (req, res) => {
 
