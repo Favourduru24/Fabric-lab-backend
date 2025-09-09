@@ -8,7 +8,8 @@ const allowedOrigin = require('../config/allowedOrigin')
              callback(new Error('Not allowed by CORS!'))
          }
      },
-     optionSuccessStatus: 204,
+      credentials: true,  // ✅ This is crucial for allowing credentials
+    optionsSuccessStatus: 204,  // Some legacy browsers choke on 204
  }
 
  module.exports = corsOption
