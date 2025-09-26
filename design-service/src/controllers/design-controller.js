@@ -20,13 +20,12 @@ const getUserDesign = async (req, res) => {
       const userId = req.user.userId;
 
       // Create cache key with encoded parameters
-      const cacheKey = `userDesigns:${userId}:${encodeURIComponent(category)}:${date}:${numPage}:${numLimit}`;
+      const cacheKey = `userDesigns:${userId}:${numPage}:${numLimit}`;
       const cashedDesign = await req.redisClient.get(cacheKey);
 // ${encodeURIComponent(query)}
       if(cashedDesign) {
          return res.json(JSON.parse(cashedDesign));
       }
-      console.log(userId)
       // Base condition - user filter
       const baseCondition = { user: userId };
 

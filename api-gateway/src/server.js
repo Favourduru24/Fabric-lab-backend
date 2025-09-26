@@ -33,7 +33,7 @@ const routeLimiter = rateLimit({
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 })
 
-app.use(routeLimiter)
+// app.use(routeLimiter)
 
 //proxy option ::
  const proxyOptions = {

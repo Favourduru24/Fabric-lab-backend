@@ -35,17 +35,17 @@ const rateLimiter = new RateLimiterRedis({
    duration: 60
 })
 
-  app.use((req, res, next) => {
-  rateLimiter.consume(req.ip)
-    .then(() => next())
-    .catch((error) => {
-    logEvent(`Too Many Requests from this Ip ${req.ip}`, 'rateLimiter.log')
-    res.status(429).json({
-      success: false,
-      message: 'Too many requests'
-    })
-    }) 
-})
+//   app.use((req, res, next) => {
+//   rateLimiter.consume(req.ip)
+//     .then(() => next())
+//     .catch((error) => {
+//     logEvent(`Too Many Requests from this Ip ${req.ip}`, 'rateLimiter.log')
+//     res.status(429).json({
+//       success: false,
+//       message: 'Too many requests'
+//     })
+//     }) 
+// })
 
 // route handlers
 app.use(
