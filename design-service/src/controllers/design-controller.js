@@ -84,12 +84,12 @@ const getUserDesign = async (req, res) => {
        
       const skipAmount = (numPage - 1) * numLimit;
 
-      const designs = await Design.find(conditions)
+      const designs = await Design.find(userId)
          .sort({ updatedAt: -1 })
          .skip(skipAmount)
          .limit(numLimit);
 
-      const designCount = await Design.countDocuments(conditions);
+      const designCount = await Design.countDocuments();
 
       const result = {
          data: designs,
