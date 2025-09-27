@@ -117,36 +117,36 @@ const getUserDesign = async (req, res) => {
 }
 
 const getAllDesign = async (req, res) => {
+  try {
+    const { query, page = 1, limit = 10 } = req.query;
 
-   try {
-    const {query, page = 1, limit = 10} = req.query
+    const numPage = Math.max(1, Number(page));
+    const numLimit = Math.max(1, Number(limit));
 
-    const numPage = Math.max(1, Number(page))
-    const numLimit = Math.max(1, Number(limit))
+    // ✅ FIX: Include query in cache key
+    const cacheKey = `designs:${query || 'all'}:${numPage}:${numLimit}`;
+    const cashedDesign = await req.redisClient.get(cacheKey);
 
-    const cacheKey = `designs:${numPage}:${numLimit}`
-    const cashedDesign = await req.redisClient.get(cacheKey)
-// ${query}
-    if(cashedDesign) {
-       return res.json(JSON.parse(cashedDesign))
+    if (cashedDesign) {
+      return res.json(JSON.parse(cashedDesign));
     }
-     
+
     // Search condition
     const searchCondition = query ? {
       $or: [
-        {name: {$regex: query, $options: 'i'}},
+        { name: { $regex: query, $options: 'i' } },
         { category: { $regex: query, $options: 'i' } }
       ]
-    } : {}
+    } : {};
 
-    const skipAmount = (numPage - 1) * numLimit
+    const skipAmount = (numPage - 1) * numLimit;
 
     const designs = await Design.find(searchCondition)
-                               .skip(skipAmount)
-                               .sort({updatedAt: -1 })
-                               .limit(numLimit)
+      .skip(skipAmount)
+      .sort({ updatedAt: -1 })
+      .limit(numLimit);
 
-    const designCount = await Design.countDocuments(searchCondition)
+    const designCount = await Design.countDocuments(searchCondition);
 
     const result = {
       data: designs,
@@ -154,24 +154,25 @@ const getAllDesign = async (req, res) => {
       currentPage: numPage,
       totalItems: designCount,
       itemsPerPage: numLimit
-    }
+    };
 
-    await req.redisClient.setex(cacheKey, 300, JSON.stringify(result))
+    // ✅ Cache for 5 minutes (300 seconds)
+    await req.redisClient.setex(cacheKey, 300, JSON.stringify(result));
 
-    res.status(200).json({  // Changed from 201 to 200
+    res.status(200).json({
       success: true,
       message: 'Designs fetched successfully!',
-      data: result  // Consistent structure with getUserDesign
-    })
+      data: result
+    });
 
-   } catch (error) {
-       res.status(500).json({
-         success: false,
-         message: 'Something went wrong fetching design.'
-      }) 
-      console.log('Something went wrong fetching design', error)
-   }
-}
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Something went wrong fetching design.'
+    });
+    console.log('Something went wrong fetching design', error);
+  }
+};
 
  const getUserDesignByID = async (req, res) => {
 
