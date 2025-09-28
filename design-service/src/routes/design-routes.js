@@ -4,8 +4,6 @@ const designController = require('../controllers/design-controller')
 const authMidddleware = require('../middleware/auth-middleware')
 const rateLimiter = require('../middleware/rateLimiter')
 
-
-
 router.get('/get-user-design', authMidddleware, designController.getUserDesign)
 router.get('/get-user-design/:id', authMidddleware, designController.getUserDesignByID)
 router.post('/save-design', authMidddleware, designController.saveDesign)

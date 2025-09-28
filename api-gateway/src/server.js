@@ -33,7 +33,7 @@ const routeLimiter = rateLimit({
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 })
 
-// app.use(routeLimiter)
+app.use(routeLimiter)
 
 //proxy option ::
  const proxyOptions = {
@@ -104,13 +104,6 @@ const routeLimiter = rateLimit({
       proxy(process.env.DESIGN_SERVICE, {
     ...proxyOptions,
   }))
-
-  //  app.use('/v1/media', 
-  //   authMiddleware,
-  //   proxy(process.env.UPLOAD_SERVICE, ({
-  //    ...proxyOptions,
-  //    parseReqBody: false
-  // })))
 
   app.use(errorMiddleware)
 
