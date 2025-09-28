@@ -12,94 +12,123 @@ const mongoose = require('mongoose')
     }
  }
 
-const getUserDesign = async (req, res) => {
-   try {
+// const getUserDesign = async (req, res) => {
+//    try {
+      // const { query = '', category = '', date, page = 1, limit = 10 } = req.query;
+//       const numPage = Math.max(1, Number(page));
+//       const numLimit = Math.max(1, Number(limit));
+//       const userId = req.user.userId;
+
+//       // Create cache key with encoded parameters
+//       const cacheKey = `userDesigns:${userId}:${numPage}:${numLimit}`;
+//       const cashedDesign = await req.redisClient.get(cacheKey);
+// // ${encodeURIComponent(query)}
+//       if(cashedDesign) {
+//          return res.json(JSON.parse(cashedDesign));
+//       }
+//       // Base condition - user filter
+//       const baseCondition = { user: userId };
+
+//       // Date conditions
+//       // let timeCondition = {};
+      
+//       // if(date) {
+//       //    const now = new Date();
+
+//       //    if(date === 'today') {
+//       //       const startOfDay = new Date(now);
+//       //       startOfDay.setHours(0, 0, 0, 0);
+//       //       timeCondition.createdAt = { $gte: startOfDay };
+//       //    } else if(date === 'created_recently') {
+//       //       timeCondition.createdAt = { $gte: new Date(now - 24 * 60 * 60 * 1000) };
+//       //    } else if(date === 'yesterday') {
+//       //       const yesterday = new Date(now);
+//       //       yesterday.setDate(yesterday.getDate() - 1);
+//       //       yesterday.setHours(0, 0, 0, 0);
+//       //       const endOfYesterday = new Date(yesterday);
+//       //       endOfYesterday.setHours(23, 59, 59, 999);
+//       //       timeCondition.createdAt = { $gte: yesterday, $lte: endOfYesterday };
+//       //    } else if(date === 'last week') {
+//       //       const lastWeek = new Date(now);
+//       //       lastWeek.setDate(lastWeek.getDate() - 7);
+//       //       timeCondition.createdAt = { $gte: lastWeek };
+//       //    } else if(date === 'last month') {
+//       //       const lastMonth = new Date(now);
+//       //       lastMonth.setMonth(lastMonth.getMonth() - 1);
+//       //       timeCondition.createdAt = { $gte: lastMonth };
+//       //    }
+//       // }
+
+//       // Search condition
+//       const searchCondition = query ? {
+//          $or: [
+//             { name: { $regex: query, $options: 'i' } },
+//             { category: { $regex: query, $options: 'i' } }
+//          ]
+//       } : {};
+
+//       // Category condition (exact match or regex-based)
+//       const categoryCondition = category ? { 
+//         category: { $regex: category, $options: 'i' } 
+//       } : {};
+
+//       // Build final conditions efficiently
+//      const conditions = {
+//             $and: [
+//                 baseCondition,
+//                 searchCondition, 
+//                 categoryCondition
+//             ].filter(cond => Object.keys(cond).length > 0)
+//         };
+      
+       
+//       const skipAmount = (numPage - 1) * numLimit;
+
+//       const designs = await Design.find({userId})
+//          .sort({ updatedAt: -1 })
+//          .skip(skipAmount)
+//          .limit(numLimit);
+
+//       const designCount = await Design.countDocuments();
+
+//       const result = {
+//          data: designs,
+//          totalPages: Math.ceil(designCount / numLimit),
+//          currentPage: numPage,
+//          totalItems: designCount,
+//          itemsPerPage: numLimit
+//       };
+
+//       await req.redisClient.setex(cacheKey, 300, JSON.stringify(result));
+
+//       res.status(200).json({
+//          success: true,
+//          message: designs.length > 0 ? 'Designs fetched successfully!' : 'No designs found',
+//          data: result
+//       });
+
+//    } catch (error) {
+//       console.log('Something went wrong fetching design', error);
+//       res.status(500).json({
+//          success: false,
+//          message: 'Something went wrong fetching user designs.'
+//       }); 
+//    }
+// }
+
+ const getUserDesign = async (req, res) => {
+
+     const userId = req.user.userId;
       const { query = '', category = '', date, page = 1, limit = 10 } = req.query;
       const numPage = Math.max(1, Number(page));
       const numLimit = Math.max(1, Number(limit));
-      const userId = req.user.userId;
 
-      // Create cache key with encoded parameters
-      const cacheKey = `userDesigns:${userId}:${numPage}:${numLimit}`;
-      const cashedDesign = await req.redisClient.get(cacheKey);
-// ${encodeURIComponent(query)}
-      if(cashedDesign) {
-         return res.json(JSON.parse(cashedDesign));
-      }
-      // Base condition - user filter
-      const baseCondition = { user: userId };
+       try {
+         const designs = await Design.find({userId})
 
-      // Date conditions
-      // let timeCondition = {};
-      
-      // if(date) {
-      //    const now = new Date();
-
-      //    if(date === 'today') {
-      //       const startOfDay = new Date(now);
-      //       startOfDay.setHours(0, 0, 0, 0);
-      //       timeCondition.createdAt = { $gte: startOfDay };
-      //    } else if(date === 'created_recently') {
-      //       timeCondition.createdAt = { $gte: new Date(now - 24 * 60 * 60 * 1000) };
-      //    } else if(date === 'yesterday') {
-      //       const yesterday = new Date(now);
-      //       yesterday.setDate(yesterday.getDate() - 1);
-      //       yesterday.setHours(0, 0, 0, 0);
-      //       const endOfYesterday = new Date(yesterday);
-      //       endOfYesterday.setHours(23, 59, 59, 999);
-      //       timeCondition.createdAt = { $gte: yesterday, $lte: endOfYesterday };
-      //    } else if(date === 'last week') {
-      //       const lastWeek = new Date(now);
-      //       lastWeek.setDate(lastWeek.getDate() - 7);
-      //       timeCondition.createdAt = { $gte: lastWeek };
-      //    } else if(date === 'last month') {
-      //       const lastMonth = new Date(now);
-      //       lastMonth.setMonth(lastMonth.getMonth() - 1);
-      //       timeCondition.createdAt = { $gte: lastMonth };
-      //    }
-      // }
-
-      // Search condition
-      const searchCondition = query ? {
-         $or: [
-            { name: { $regex: query, $options: 'i' } },
-            { category: { $regex: query, $options: 'i' } }
-         ]
-      } : {};
-
-      // Category condition (exact match or regex-based)
-      const categoryCondition = category ? { 
-        category: { $regex: category, $options: 'i' } 
-      } : {};
-
-      // Build final conditions efficiently
-     const conditions = {
-            $and: [
-                baseCondition,
-                searchCondition, 
-                categoryCondition
-            ].filter(cond => Object.keys(cond).length > 0)
-        };
-      
-       
-      const skipAmount = (numPage - 1) * numLimit;
-
-      const designs = await Design.find({userId})
-         .sort({ updatedAt: -1 })
-         .skip(skipAmount)
-         .limit(numLimit);
-
-      const designCount = await Design.countDocuments();
-
-      const result = {
-         data: designs,
-         totalPages: Math.ceil(designCount / numLimit),
-         currentPage: numPage,
-         totalItems: designCount,
-         itemsPerPage: numLimit
+         const result = {
+         data: designs       
       };
-
-      await req.redisClient.setex(cacheKey, 300, JSON.stringify(result));
 
       res.status(200).json({
          success: true,
@@ -107,14 +136,16 @@ const getUserDesign = async (req, res) => {
          data: result
       });
 
-   } catch (error) {
-      console.log('Something went wrong fetching design', error);
-      res.status(500).json({
+       } catch(error) {
+        console.error('Something went wrong fetching design', error);
+        res.status(500).json({
          success: false,
          message: 'Something went wrong fetching user designs.'
-      }); 
-   }
-}
+       }); 
+       }
+ }
+
+
 
 const getAllDesign = async (req, res) => {
   try {
